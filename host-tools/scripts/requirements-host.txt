@@ -1,0 +1,5 @@
+# Minimal deps for quick-launch.sh config parsing and run-td
+# Used when bootstrapping host-tools/scripts/venv on fresh servers
+# where system Python cannot be modified (pip install --user or venv required)
+pyyaml>=6.0
+jsonschema>=4.0

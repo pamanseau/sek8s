@@ -14,6 +14,9 @@ host-tools/scripts/config.yaml
 measure
 **/*.qcow2
 
+# Host-tools venv (bootstrapped by quick-launch.sh when PyYAML not in system Python)
+host-tools/scripts/venv/
+
 # GPU admin tools - ignore source files and build artifacts, keep wheel and config files
 host-tools/scripts/gpu-tools/*
 !host-tools/scripts/gpu-tools/bundle-tools.sh

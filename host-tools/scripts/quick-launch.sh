@@ -210,20 +210,57 @@ EOF
 done
 
 # --------------------------------------------------------------------
-# Load configuration file (YAML) – overrides defaults
+# Ensure Python + PyYAML available (bootstrap venv on fresh servers)
 # --------------------------------------------------------------------
-if [[ -n "$CONFIG_FILE" ]]; then
-  echo "Loading configuration from: $CONFIG_FILE"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON_CMD="python3"
+
+ensure_host_python() {
+  if command -v python3 >/dev/null 2>&1 && python3 -c "import yaml" 2>/dev/null; then
+    PYTHON_CMD="python3"
+    return
+  fi
 
   if ! command -v python3 >/dev/null 2>&1; then
     echo "Error: Python 3 not found. Install with: sudo apt install python3"
     exit 1
   fi
 
-  if ! python3 -c "import yaml" 2>/dev/null; then
-    echo "Error: PyYAML not found. Install with: pip3 install pyyaml"
+  if ! python3 -m venv --help >/dev/null 2>&1; then
+    echo "Error: python3-venv not found. Install with: sudo apt install python3-venv"
+    echo "  (Required to bootstrap PyYAML on systems that disallow global pip installs)"
     exit 1
   fi
+
+  VENV_DIR="$SCRIPT_DIR/venv"
+  REQ_FILE="$SCRIPT_DIR/requirements-host.txt"
+
+  if [[ ! -f "$REQ_FILE" ]]; then
+    echo "Error: requirements-host.txt not found at $REQ_FILE"
+    exit 1
+  fi
+
+  if [[ ! -d "$VENV_DIR" ]]; then
+    echo "Creating virtual environment at $VENV_DIR (PyYAML not in system Python)..."
+    python3 -m venv "$VENV_DIR"
+    "$VENV_DIR/bin/pip" install --quiet -r "$REQ_FILE"
+  fi
+
+  if ! "$VENV_DIR/bin/python" -c "import yaml" 2>/dev/null; then
+    echo "Installing PyYAML and jsonschema into venv..."
+    "$VENV_DIR/bin/pip" install --quiet -r "$REQ_FILE"
+  fi
+
+  PYTHON_CMD="$VENV_DIR/bin/python"
+}
+
+# --------------------------------------------------------------------
+# Load configuration file (YAML) – overrides defaults
+# --------------------------------------------------------------------
+if [[ -n "$CONFIG_FILE" ]]; then
+  echo "Loading configuration from: $CONFIG_FILE"
+
+  ensure_host_python
 
   if [[ ! -d "./chutes_host" ]]; then
     echo "Error: chutes_host package not found in current directory"
@@ -231,7 +268,7 @@ if [[ -n "$CONFIG_FILE" ]]; then
   fi
 
   set +e
-  CONFIG_OUTPUT=$(python3 -m chutes_host.config "$CONFIG_FILE" 2>&1)
+  CONFIG_OUTPUT=$("$PYTHON_CMD" -m chutes_host.config "$CONFIG_FILE" 2>&1)
   CONFIG_EXIT_CODE=$?
   set -e
 
@@ -517,8 +554,8 @@ LAUNCH_ARGS+=(--cache-volume "$CACHE_VOLUME")
 LAUNCH_ARGS+=(--storage-volume "$STORAGE_VOLUME")
 [[ "$FOREGROUND" == "true" ]] && LAUNCH_ARGS+=(--foreground)
 
-# Call Python runner
-python3 ./run-td "${LAUNCH_ARGS[@]}"
+# Call Python runner (uses venv python if we bootstrapped for config parsing)
+"$PYTHON_CMD" ./run-td "${LAUNCH_ARGS[@]}"
 
 echo ""
 echo "=== Chutes VM Deployed Successfully ==="

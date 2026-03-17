@@ -6,11 +6,11 @@ The TEE VM configuration system uses YAML files with JSON schema validation to e
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Dependencies
 
-```bash
-pip3 install pyyaml jsonschema
-```
+When using a config file, `quick-launch.sh` automatically bootstraps a virtual environment at `host-tools/scripts/venv/` with PyYAML and jsonschema if they are not available in the system Python. This works on fresh servers where `pip3 install` into the global environment is restricted.
+
+**Manual setup** (optional): If you prefer to install globally, run `pip3 install pyyaml jsonschema` (or use `pip3 install --user` where allowed).
 
 ### 2. Create Your Config
 
@@ -258,10 +258,7 @@ The schema validation will catch this immediately, preventing runtime errors.
 Warning: jsonschema not installed. Skipping validation.
 ```
 
-Install jsonschema for validation:
-```bash
-pip3 install jsonschema
-```
+The venv bootstrap includes jsonschema. If you see this, ensure `quick-launch.sh` created the venv (run with a config file once). Or install manually: `pip3 install jsonschema` (or `pip3 install --user jsonschema` where allowed).
 
 ### Parse Error
 

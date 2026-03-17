@@ -10,7 +10,7 @@ This guide walks you through setting up a baremetal host to launch TDX-enabled V
 - **OS**: Ubuntu 25.04 (required for TDX host support)
 - **Access**: Root/sudo privileges
 - **Network**: Public network interface (e.g., `ens9f0np0`)
-- **Python**: Python 3 with PyYAML (`pip3 install pyyaml`)
+- **Python**: Python 3 with `python3-venv` (e.g. `sudo apt install python3-venv`). PyYAML and jsonschema are bootstrapped automatically into `host-tools/scripts/venv/` on first run when using a config file.
 
 ## Architecture Overview
 

@@ -63,7 +63,7 @@ Follow the dedicated [TDX VM Host Setup Guide](../host-tools/README.md). High-le
 2. Edit `tdx/setup-tdx-config` (set `TDX_SETUP_ATTESTATION=1`) and run `tdx/setup-tdx-host.sh`.
 3. Reboot into the TDX-enabled kernel and verify `dmesg | grep -i tdx`.
 4. Configure PCCS (`pccs-configure`, restart the service, run `PCKIDRetrievalTool`).
-5. Install Python + PyYAML (`pip3 install pyyaml`) for the orchestration scripts.
+5. Install Python 3 and python3-venv (`sudo apt install python3 python3-venv`). PyYAML is bootstrapped automatically into a venv on first launch when using a config file.
 
 When the host guide says "proceed to launch," return here to continue.
 
