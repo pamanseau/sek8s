@@ -31,6 +31,32 @@ def _scripts_dir() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _recover_and_reset_gpus(cmd_base: list[str]) -> None:
+    """Run nvidia-gpu-tools recover and reset to fix GPUs in bad state after reboot.
+
+    Runs --recover-broken-gpu then --reset-with-sbr --reset-after-ppcie-mode-switch
+    before configuring modes and binding to vfio-pci. Non-fatal on failure so
+    hosts without broken GPUs or older tool versions still launch.
+    """
+    print('  Recovering and resetting GPUs (post-reboot / broken state)...')
+    for args, label in [
+        (['--recover-broken-gpu'], 'recover-broken-gpu'),
+        (['--reset-with-sbr', '--reset-after-ppcie-mode-switch'], 'reset-with-sbr'),
+    ]:
+        try:
+            r = subprocess.run(
+                cmd_base + args,
+                stderr=subprocess.STDOUT,
+                timeout=120,
+            )
+            if r.returncode != 0:
+                print(f'  Warning: nvidia-gpu-tools {label} exited with {r.returncode}; continuing.')
+        except subprocess.TimeoutExpired:
+            print(f'  Warning: nvidia-gpu-tools {label} timed out; continuing.')
+        except Exception as e:
+            print(f'  Warning: nvidia-gpu-tools {label} failed: {e}; continuing.')
+
+
 def _configure_nvswitches(
     nvswitches: list[str],
     profile: GpuProfile,
@@ -88,6 +114,7 @@ def _prepare_devices(
     cmd_base = ['sudo', nvidia_tools_cmd]
     total_gpus = len(gpus)
 
+    _recover_and_reset_gpus(cmd_base)
     _configure_nvswitches(nvswitches, profile, total_gpus, cmd_base)
     _configure_gpus(gpus, profile, total_gpus, cmd_base)
 
