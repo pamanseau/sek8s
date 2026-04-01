@@ -106,6 +106,56 @@ class B200Profile(GpuProfile):
         return "CC mode (B200)"
 
 
+class H100Profile(GpuProfile):
+    # GH100 / Hopper SKUs (see `lspci -nn -d 10de:`). Excludes H200 (2335), H20, H800, GH200, etc.
+    pci_device_ids = [
+        "2321",  # H100L 94GB
+        "2330",  # H100 SXM5 80GB
+        "2331",  # H100 PCIe
+        "2336",  # H100
+        "2337",  # H100 SXM5 64GB
+        "2338",  # H100 SXM5 96GB
+        "2339",  # H100 SXM5 94GB
+        "233d",  # H100 96GB
+    ]
+
+    @property
+    def name(self) -> str:
+        return "H100"
+
+    @property
+    def bar_size_mb(self) -> int:
+        # 128 GiB: matches lspci "Physical Resizable BAR / BAR 2: current size: 128GB" on H100 SXM5 80GB (2330).
+        return 131072
+
+    @property
+    def vram_gb(self) -> int:
+        return 80  # common 80GB HBM3; size VM RAM up if you run 94/96GB SKUs (2338, 2339, …)
+
+    @property
+    def host_cpus(self) -> int:
+        return 128
+
+    def get_cc_mode_args(self, total_gpus: int) -> list[list[str]]:
+        if total_gpus == 8:
+            return [
+                ["--set-cc-mode=off", "--reset-after-cc-mode-switch"],
+                ["--set-ppcie-mode=on", "--reset-after-ppcie-mode-switch"],
+            ]
+        return [
+            ["--set-ppcie-mode=off", "--reset-after-ppcie-mode-switch"],
+            ["--set-cc-mode=on", "--reset-after-cc-mode-switch"],
+        ]
+
+    def should_passthrough_nvswitches(self, total_gpus: int) -> bool:
+        return total_gpus == 8
+
+    def describe_mode(self, total_gpus: int) -> str:
+        if total_gpus == 8:
+            return "PPCIe mode (8 GPUs, H100)"
+        return "CC mode (H100)"
+
+
 class H200Profile(GpuProfile):
     pci_device_ids = ["2335"]  # H200 SXM (GH100)
 
@@ -178,6 +228,7 @@ class RTXPro6000Profile(GpuProfile):
 
 GPU_PROFILES: dict[str, GpuProfile] = {
     "B200": B200Profile(),
+    "H100": H100Profile(),
     "H200": H200Profile(),
     "RTX_PRO_6000": RTXPro6000Profile(),
 }

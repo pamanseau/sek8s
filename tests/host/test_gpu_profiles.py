@@ -88,6 +88,29 @@ def test_rtx_pro_6000_never_passes_through_nvswitches(gpu_count):
 
 
 # ---------------------------------------------------------------------------
+# H100 conditional logic: same NVSwitch / PPCIe pattern as H200
+# ---------------------------------------------------------------------------
+
+
+def test_h100_switches_to_ppcie_at_8_gpus():
+    profile = GPU_PROFILES["H100"]
+    args = profile.get_cc_mode_args(8)
+    flat = [a for invocation in args for a in invocation]
+    assert "--set-ppcie-mode=on" in flat
+    assert "--set-cc-mode=off" in flat
+    assert profile.should_passthrough_nvswitches(8) is True
+
+
+def test_h100_uses_cc_mode_below_8_gpus():
+    profile = GPU_PROFILES["H100"]
+    args = profile.get_cc_mode_args(4)
+    flat = [a for invocation in args for a in invocation]
+    assert "--set-cc-mode=on" in flat
+    assert "--set-ppcie-mode=off" in flat
+    assert profile.should_passthrough_nvswitches(4) is False
+
+
+# ---------------------------------------------------------------------------
 # H200 conditional logic: PPCIe vs CC depends on GPU count
 # ---------------------------------------------------------------------------
 
